@@ -91,22 +91,30 @@ function home(){
   <p class="note">Questions are original practice material written at JLPT N5 level, not taken from official exams. Scoring is a practice guide only.</p>`;
 }
 function speak(script,btn){
-  if(!('speechSynthesis' in window)){alert('Speech is not available in this browser. Read the script aloud instead.');return}
+  if(!('speechSynthesis' in window)){alert('Speech synthesis is not supported in this browser.\n\nPlease use Chrome, Edge, or Safari.\n\nYou can read the script text shown below the question instead.');return}
   const synth=speechSynthesis; synth.cancel();
-  const voices=synth.getVoices().filter(v=>/^ja/i.test(v.lang));
-  const lines=script.split('\n').map(l=>l.trim()).filter(Boolean);
-  let reps=2;
-  const queue=[];
-  for(let r=0;r<reps;r++){ lines.forEach(l=>{
-    let pitch=1,t=l;
-    if(/^男[：:]/.test(l)){pitch=0.8;t=l.replace(/^男[：:]/,'')}
-    else if(/^女[：:]/.test(l)){pitch=1.25;t=l.replace(/^女[：:]/,'')}
-    t=t.replace(/^しつもん[：:]/,'');
-    const u=new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.85; u.pitch=pitch; if(voices[0])u.voice=voices[0];
-    queue.push(u)});
-    const gap=new SpeechSynthesisUtterance('。'); gap.lang='ja-JP'; gap.volume=0; queue.push(gap);
+  function doSpeak(){
+    const voices=synth.getVoices().filter(v=>/^ja/i.test(v.lang));
+    if(!voices.length){
+      const msg='⚠️ No Japanese voice found on this device.\n\nTo fix this:\n• Windows: Settings → Time & Language → Language → Add Japanese → Install language pack\n• Android: Settings → General Management → Language → Text-to-speech → Install Japanese\n• iOS/Mac: Settings → Accessibility → Spoken Content → Voices → Japanese\n• Chrome on desktop: Also try Settings → Languages → Add Japanese\n\nFor now, please read the script text shown below the ▶ button.';
+      alert(msg); return;
+    }
+    const lines=script.split('\n').map(l=>l.trim()).filter(Boolean);
+    const queue=[];
+    for(let r=0;r<2;r++){ lines.forEach(l=>{
+      let pitch=1,t=l;
+      if(/^男[：:]/.test(l)){pitch=0.8;t=l.replace(/^男[：:]/,'')}
+      else if(/^女[：:]/.test(l)){pitch=1.25;t=l.replace(/^女[：:]/,'')}
+      t=t.replace(/^しつもん[：:]/,'');
+      const u=new SpeechSynthesisUtterance(t); u.lang='ja-JP'; u.rate=0.85; u.pitch=pitch; u.voice=voices[0];
+      queue.push(u)});
+      const gap=new SpeechSynthesisUtterance('。'); gap.lang='ja-JP'; gap.volume=0; queue.push(gap);
+    }
+    queue.forEach(u=>synth.speak(u));
   }
-  queue.forEach(u=>synth.speak(u));
+  // Chrome loads voices asynchronously on first call — wait if needed
+  if(synth.getVoices().length){doSpeak()}
+  else{speechSynthesis.addEventListener('voiceschanged',doSpeak,{once:true})}
 }
 function paper(id){
   const p=DATA.papers.find(x=>x.id===id); if(!p){home();return}
