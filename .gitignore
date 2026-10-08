@@ -1,0 +1,6 @@
+# Don't push the kanji notes (optional, remove if you want it tracked)
+# kanji.md
+
+# OS files
+.DS_Store
+Thumbs.db
